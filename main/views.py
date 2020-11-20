@@ -1,39 +1,58 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, HttpResponse
 from django.views import View
-from django.shortcuts import render,HttpResponse
-from django.contrib.auth import login, authenticate,logout
-from django.contrib.auth.forms import UserCreationForm
-from django.shortcuts import render, redirect,reverse
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
-from .forms import SignUpForm
+from django.utils.decorators import method_decorator
+from django.urls import reverse
+from .models import report_incident
+from django.contrib.auth.models import User
 # Create your views here.
-def Register(request):
-    if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        myform = SignUpForm(request.POST)
-        if form.is_valid():
-            user=form.save()
-            user.refresh_from_db()
-            user.student.num = form.cleaned_data.get('num')
-            user.student.name = form.cleaned_data.get('name')
-            user.student.surname = form.cleaned_data.get('surname')
-            user.student.Age = form.cleaned_data.get('Age')
-            user.student.Address = form.cleaned_data.get('Address')
-            user.save()
-            username = form.cleaned_data.get('username')
-            raw_password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=raw_password)
+class homepage(View):
+    def get(self, request):
+        return render(request, 'index.html')
+class userlogin(View):
+    def get(self, request):
+        return render(request,"authentication-login1.html")
+    def post(self, request):
+        uname = request.POST.get('uname', None)
+        password = request.POST.get('password', None)
+        user = authenticate(username=uname, password=password)
+        if user is not None:
             login(request, user)
-            try:
-                next = request.GET['next']
-            except:
-                next="/sec"
+            messages.info(request, f"You are now logged in as {uname}")
+            next = request.GET.get("next","/")
             return redirect(next)
         else:
-            form = SignUpForm()
-            return render(request, 'index.html', {'form': form,'myform': myform})
-    else:
-        #form = UserCreationForm()
-        form = SignUpForm()
-    return render(request, 'index.html', {'form': form})
+            messages.success(request, 'your login or password in Wrong')
+            return redirect(reverse("main:userlogin"))
+        #return HttpResponse(uname)
+def userlogout(request):
+    logout(request)
+    return redirect(reverse("main:userlogin"))
+
+@method_decorator(login_required(login_url='/login'), name='dispatch')
+class report_form(View):
+    def get(self, request):
+        return render(request, "real_report_form.html")
+    def post(self, request):
+        incidentdepartment=request.POST.get("incidentdepartment")
+        date = request.POST.get("date")
+        time = request.POST.get("time")
+        incidentlocation = request.POST.get("incidentlocation")
+        initialseverity= request.POST.get("initialseverity")
+        ImmediateActionTaken = request.POST.get("ImmediateActionTaken")
+        SubIncident= request.POST.getlist("SubIncident")
+        user = User.objects.get(id=request.user.id)
+        obj = report_incident()
+        obj.user = user
+        obj.incidentdepartment = incidentdepartment
+        obj.date = date
+        obj.time = time
+        obj.incidentlocation = incidentlocation
+        obj.initialserverity = initialseverity
+        obj.ImmediateAcitonTaken = ImmediateActionTaken
+        obj.SubIncident = SubIncident
+        obj.save()
+        messages.success(request, 'Data is saved')
+        return redirect(reverse("main:homepage"))

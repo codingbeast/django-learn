@@ -16,3 +16,15 @@ def update_user_profile(sender, instance, created, **kwargs):
     if created:
         Student.objects.create(user=instance)
     instance.student.save()
+
+
+class report_incident(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    incidentdepartment = models.CharField(max_length=30)
+    date = models.DateField()
+    time = models.TimeField()
+    incidentlocation = models.CharField(max_length=50)
+    initialserverity = models.CharField(max_length=70)
+    ImmediateAcitonTaken = models.CharField(max_length=80)
+    SubIncident = models.CharField(max_length=80)
+    
