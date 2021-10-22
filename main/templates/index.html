@@ -6,7 +6,9 @@
 <body>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        {% for fm in form %}
+          {{fm.label}}{{fm}}{{fm|striptags}} <br><br>
+        {% endfor %}
         <button type="submit">Sign up</button>
       </form>
 </body>
